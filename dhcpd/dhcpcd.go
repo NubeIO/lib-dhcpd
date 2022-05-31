@@ -16,6 +16,10 @@ const filePath = "dhcpcd.conf" // is normally /etc/dhcpcd.conf
 type DHCP struct {
 }
 
+func New() *DHCP {
+	return &DHCP{}
+}
+
 type NetInterface struct {
 	Name         string   // Network interface name
 	MTU          int      // MTU

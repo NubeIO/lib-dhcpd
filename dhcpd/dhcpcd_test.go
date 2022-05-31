@@ -7,7 +7,7 @@ import (
 
 func TestHasStaticIP(t *testing.T) {
 
-	nets := &DHCP{}
+	nets := New()
 
 	fmt.Println(nets.SetAsAuto("wlp3s0"))
 	fmt.Println(nets.IsStaticIP("wlp3s0"))
