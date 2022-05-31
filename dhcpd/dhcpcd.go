@@ -38,25 +38,64 @@ func removeLine(path string, lineNumber int) error {
 	return err
 }
 
-// HasStaticIP Check if network interface has a static IP configured
-// Supports: Raspbian.
-func (inst *DHCP) HasStaticIP(iFaceName string, delete bool) (bool, error) {
+// SetAsAuto check to auto address
+func (inst *DHCP) SetAsAuto(iFaceName string) (bool, error) {
 	if isLinux() {
 		body, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return false, err
 		}
-		return hasStaticIPDhcpcdConf(string(body), iFaceName, delete), nil
+		return hasStaticIPDhcpcdConf(string(body), iFaceName, true), nil
+	}
+	return false, fmt.Errorf("cannot check if IP is static: not supported on %s", runtime.GOOS)
+}
+
+// IsStaticIP Check if network interface has a static IP configured
+func (inst *DHCP) IsStaticIP(iFaceName string) (bool, error) {
+	if isLinux() {
+		body, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return false, err
+		}
+		return hasStaticIPDhcpcdConf(string(body), iFaceName, false), nil
 	}
 	return false, fmt.Errorf("cannot check if IP is static: not supported on %s", runtime.GOOS)
 }
 
 //SetStaticIP Set a static IP for the specified network interface
 func (inst *DHCP) SetStaticIP(iFaceName, ip, gatewayIP, dnsIP string) error {
+	iface, err := inst.CheckInterfacesNames(iFaceName)
+	if err != nil {
+		return err
+	}
+	if !iface {
+		return fmt.Errorf("network interface not found")
+	}
 	if isLinux() {
 		return setStaticIPDhcpdConf(iFaceName, ip, gatewayIP, dnsIP)
 	}
 	return fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
+}
+
+func (inst *DHCP) CheckInterfacesNames(iFaceName string) (bool, error) {
+	names, err := inst.GetInterfacesNames()
+	if err != nil {
+		return false, err
+	}
+	for _, iface := range names.Names {
+		matched, _ := regexp.MatchString(iface, iFaceName)
+		if matched {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("network interface not found")
+
+}
+
+func (inst *DHCP) GetInterfacesNames() (networking.InterfaceNames, error) {
+	nets := networking.NewNets()
+	return nets.GetInterfacesNames()
+
 }
 
 // for dhcpcd.conf
@@ -73,9 +112,11 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
+
 		line = strings.TrimSpace(line)
 		if !withinInterfaceCtx {
-			if line == nameLine {
+			matched, _ := regexp.MatchString(line, nameLine)
+			if matched {
 				// we found our interface
 				withinInterfaceCtx = true
 				if delete {
@@ -128,8 +169,9 @@ func setStaticIPDhcpdConf(iFaceName, ip, gatewayIP, dnsIP string) error {
 // for dhcpcd.conf
 func updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP string) string {
 	var body []byte
-	add := fmt.Sprintf("\ninterface %s\nstatic ip_address=%s\n",
+	add := fmt.Sprintf("\ninterface%s\nstatic ip_address=%s\n",
 		iFaceName, ip)
+
 	body = append(body, []byte(add)...)
 
 	if len(gatewayIP) != 0 {
