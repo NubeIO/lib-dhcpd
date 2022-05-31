@@ -72,7 +72,7 @@ func (inst *DHCP) SetStaticIP(iFaceName, ip, gatewayIP, dnsIP string) error {
 		return fmt.Errorf("network interface not found")
 	}
 	if isLinux() {
-		return setStaticIPDhcpdConf(iFaceName, ip, gatewayIP, dnsIP)
+		return setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP)
 	}
 	return fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
 }
@@ -143,8 +143,8 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 	return false
 }
 
-// setStaticIPDhcpdConf - updates /etc/dhcpd.conf and sets the current IP address to be static
-func setStaticIPDhcpdConf(iFaceName, ip, gatewayIP, dnsIP string) error {
+// setStaticIPDHCPConf - updates /etc/dhcpd.conf and sets the current IP address to be static
+func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string) error {
 	nets := networking.NewNets()
 	ipV4, err := nets.GetNetworkByIface(iFaceName)
 	ip = ipV4.IP
