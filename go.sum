@@ -3,8 +3,8 @@ github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.11.0/go.mod h1:HcM1YX14R7CJc
 github.com/Azure/azure-sdk-for-go/sdk/internal v0.7.0/go.mod h1:yqy467j36fJxcRV2TzfVZ1pCb5vxm4BtZPUdYWe/Xo8=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
-github.com/NubeIO/lib-networking v0.0.1 h1:NNigB1r2ko6NInjKwfpZgGpKcbYD5No6ZuSF9IrY4z4=
-github.com/NubeIO/lib-networking v0.0.1/go.mod h1:wO04Ul6Wdr5w/7s8UMZzV1/HMXuVSVFzqq7h5A3Vl6k=
+github.com/NubeIO/lib-networking v0.0.3 h1:ol3S6FxlDr/6hVJfYMXH2SdHkk8Um0uPBhe6lvxR/nc=
+github.com/NubeIO/lib-networking v0.0.3/go.mod h1:wO04Ul6Wdr5w/7s8UMZzV1/HMXuVSVFzqq7h5A3Vl6k=
 github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.2.7 h1:QKgcOjDkVujyAXWK+OysVFnQKzpZx335vGPG95UNXuI=
 github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.2.7/go.mod h1:oLI6n9wuko0KIEzrLc8saOquiQvtMUUBrUjXf0TLDVQ=
 github.com/NubeIO/nubeio-rubix-lib-models-go v1.0.4/go.mod h1:A1BPuc3UpE1EF3ugdf+8QIIKTT8s3eK+pfUcheJX2JM=

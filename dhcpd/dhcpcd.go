@@ -20,6 +20,8 @@ func New() *DHCP {
 	return &DHCP{}
 }
 
+var nets = networking.New()
+
 type NetInterface struct {
 	Name         string   // Network interface name
 	MTU          int      // MTU
@@ -68,7 +70,7 @@ func (inst *DHCP) IsStaticIP(iFaceName string) (bool, error) {
 
 //SetStaticIP Set a static IP for the specified network interface
 func (inst *DHCP) SetStaticIP(iFaceName, ip, gatewayIP, dnsIP string) error {
-	iface, err := inst.CheckInterfacesNames(iFaceName)
+	iface, err := nets.CheckInterfacesName(iFaceName)
 	if err != nil {
 		return err
 	}
@@ -79,27 +81,6 @@ func (inst *DHCP) SetStaticIP(iFaceName, ip, gatewayIP, dnsIP string) error {
 		return setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP)
 	}
 	return fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
-}
-
-func (inst *DHCP) CheckInterfacesNames(iFaceName string) (bool, error) {
-	names, err := inst.GetInterfacesNames()
-	if err != nil {
-		return false, err
-	}
-	for _, iface := range names.Names {
-		matched, _ := regexp.MatchString(iface, iFaceName)
-		if matched {
-			return true, nil
-		}
-	}
-	return false, fmt.Errorf("network interface not found")
-
-}
-
-func (inst *DHCP) GetInterfacesNames() (networking.InterfaceNames, error) {
-	nets := networking.NewNets()
-	return nets.GetInterfacesNames()
-
 }
 
 // for dhcpcd.conf
@@ -149,8 +130,13 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 
 // setStaticIPDHCPConf - updates /etc/dhcpd.conf and sets the current IP address to be static
 func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string) error {
-	nets := networking.NewNets()
+	nets := networking.New()
+	fmt.Println(iFaceName)
 	ipV4, err := nets.GetNetworkByIface(iFaceName)
+	fmt.Println(ipV4)
+	if err != nil {
+		return err
+	}
 	ip = ipV4.IP
 	gatewayIP, _ = nets.GetGatewayIP(iFaceName)
 	if dnsIP == "" {
