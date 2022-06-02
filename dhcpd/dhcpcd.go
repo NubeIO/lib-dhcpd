@@ -3,12 +3,13 @@ package dhcpd
 import (
 	"errors"
 	"fmt"
-	"github.com/NubeIO/lib-networking/networking"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/NubeIO/lib-networking/networking"
 )
 
 const filePath = "dhcpcd.conf" // is normally /etc/dhcpcd.conf
