@@ -6,12 +6,13 @@ import (
 )
 
 func TestHasStaticIP(t *testing.T) {
+	//Raspi currently using interface wlan0 (check with ifconfig)
 
 	nets := New()
 
-	out, err := nets.SetAsAuto("wlp3s0")
+	out, err := nets.SetAsAuto("wlan0")
 	fmt.Println(out, err)
-	out, err = nets.IsStaticIP("wlp3s0")
+	out, err = nets.IsStaticIP("wlan0")
 	fmt.Println(out, err)
 	err = nets.SetStaticIP("wlp3s0", "192.168.15.11/24", "192.168.15.1", "8.8.8.8")
 	fmt.Println(out, err)
