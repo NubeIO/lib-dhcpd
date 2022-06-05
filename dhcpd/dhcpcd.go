@@ -131,18 +131,7 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 
 // setStaticIPDHCPConf - updates /etc/dhcpd.conf and sets the current IP address to be static
 func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string) error {
-	nets := networking.New()
-	fmt.Println(iFaceName)
-	ipV4, err := nets.GetNetworkByIface(iFaceName)
-	fmt.Println(ipV4)
-	if err != nil {
-		return err
-	}
-	ip = ipV4.IP
-	gatewayIP, _ = nets.GetGatewayIP(iFaceName)
-	if dnsIP == "" {
-		dnsIP = ip
-	}
+
 	add := updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP)
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -160,7 +149,7 @@ func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string) error {
 // for dhcpcd.conf
 func updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP string) string {
 	var body []byte
-	add := fmt.Sprintf("\ninterface%s\nstatic ip_address=%s\n",
+	add := fmt.Sprintf("\ninterface %s\nstatic ip_address=%s\n",
 		iFaceName, ip)
 
 	body = append(body, []byte(add)...)
@@ -200,4 +189,14 @@ func isLinux() bool {
 	} else {
 		return false
 	}
+}
+
+// Restarting and flushing the services after successful IP file write operation
+func restartServices() {
+	// Commands needed to run on raspi
+	// sudo sytemctl daemon-reload
+	// sudo sytemctl stop dhcpcd.service
+	// Iterate through all interet adapters
+	// sudo ip addr flush dev INTERFACE
+
 }
