@@ -26,11 +26,11 @@ func TestHasStaticIP(t *testing.T) {
 	//fmt.Println(nets.IsStaticIP("wlp3s0"))
 	//fmt.Println(nets.SetStaticIP("eth1", "192.168.15.11/24", "192.168.15.1", "8.8.8.8"))
 
-	testCommand1 := ""
+	//testCommand1 := ""
 	testCommand2 := "ls"
-	testCommand3 := ""
+	//testCommand3 := ""
 
-	test, err := exec.Command(testCommand1, testCommand2, testCommand3).Output()
+	test, err := exec.Command(testCommand2).Output()
 	fmt.Println(string(test))
 	fmt.Println(err)
 
