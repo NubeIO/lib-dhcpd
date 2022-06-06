@@ -192,11 +192,14 @@ func isLinux() bool {
 }
 
 // Restarting and flushing the services after successful IP file write operation
-func restartServices() {
+func restartServices(iFaceName string) {
 	// Commands needed to run on raspi
 	// sudo sytemctl daemon-reload
 	// sudo sytemctl stop dhcpcd.service
-	// Iterate through all interet adapters
+
 	// sudo ip addr flush dev INTERFACE
+
+	// sudo systemctl start dhcpcd.service
+	//sudo systemctl restart networking.service
 
 }
