@@ -26,7 +26,7 @@ func TestHasStaticIP(t *testing.T) {
 	//fmt.Println(nets.IsStaticIP("wlp3s0"))
 	//fmt.Println(nets.SetStaticIP("eth1", "192.168.15.11/24", "192.168.15.1", "8.8.8.8"))
 
-	testCommand1 := "sudo"
+	testCommand1 := ""
 	testCommand2 := "ls"
 	testCommand3 := ""
 
