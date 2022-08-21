@@ -122,7 +122,7 @@ func (inst *DHCP) SetStaticIP(body *SetStaticIP) (string, error) {
 		}
 	}
 	if isLinux() {
-		return setStaticIPDHCPConf(body.IFaceName, ipAndSub, body.GatewayIP, body.DnsIP, body.CheckInterfaceExists, body.SaveFile)
+		return setStaticIPDHCPConf(body.IFaceName, ipAndSub, body.GatewayIP, body.DnsIP, body.SaveFile)
 	}
 	return "", fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
 }
@@ -172,19 +172,19 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 }
 
 // setStaticIPDHCPConf - updates /etc/dhcpd.conf and sets the current IP address to be static
-func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string, checkInterfaceExists, writeFile bool) (string, error) {
-	nets := networking.New()
-	if checkInterfaceExists {
-		ipV4, err := nets.GetNetworkByIface(iFaceName)
-		if err != nil {
-			return "", err
-		}
-		ip = ipV4.IP
-		gatewayIP, _ = nets.GetGatewayIP(iFaceName)
-		if dnsIP == "" {
-			dnsIP = ip
-		}
-	}
+func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string, writeFile bool) (string, error) {
+	//nets := networking.New()
+	//if checkInterfaceExists {
+	//	ipV4, err := nets.GetNetworkByIface(iFaceName)
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//	ip = ipV4.IP
+	//	gatewayIP, _ = nets.GetGatewayIP(iFaceName)
+	//	if dnsIP == "" {
+	//		dnsIP = ip
+	//	}
+	//}
 
 	add := updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP)
 	body, err := ioutil.ReadFile(filePath)
