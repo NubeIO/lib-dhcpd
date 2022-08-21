@@ -3,6 +3,7 @@ package dhcpd
 import (
 	"errors"
 	"fmt"
+	address "github.com/NubeIO/lib-networking/ip"
 	"github.com/NubeIO/lib-networking/networking"
 	"io/ioutil"
 	"os"
@@ -11,13 +12,30 @@ import (
 	"strings"
 )
 
-const filePath = "dhcpcd.conf" // is normally /etc/dhcpcd.conf
+var filePath = "/etc/dhcpcd.conf" // is normally /etc/dhcpcd.conf
 
 type DHCP struct {
+	FilePath string
 }
 
-func New() *DHCP {
-	return &DHCP{}
+func New(opts *DHCP) *DHCP {
+	if opts == nil {
+		opts = &DHCP{}
+	}
+	if opts.FilePath != "" {
+		filePath = opts.FilePath
+	}
+	return opts
+}
+
+type SetStaticIP struct {
+	Ip                   string `json:"ip"`
+	NetMask              string `json:"net_mask"`
+	IFaceName            string `json:"i_face_name"`
+	GatewayIP            string `json:"gateway_ip"`
+	DnsIP                string `json:"dns_ip"`
+	CheckInterfaceExists bool   `json:"check_interface_exists"`
+	SaveFile             bool   `json:"save_file"`
 }
 
 var nets = networking.New()
@@ -44,6 +62,18 @@ func removeLine(path string, lineNumber int) error {
 	return err
 }
 
+// Exists check interface
+func (inst *DHCP) Exists(iFaceName string) (bool, error) {
+	if isLinux() {
+		body, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return false, err
+		}
+		return hasStaticIPDhcpcdConf(string(body), iFaceName, false), nil
+	}
+	return false, fmt.Errorf("cannot check if IP is static: not supported on %s", runtime.GOOS)
+}
+
 // SetAsAuto check to auto address
 func (inst *DHCP) SetAsAuto(iFaceName string) (bool, error) {
 	if isLinux() {
@@ -56,31 +86,45 @@ func (inst *DHCP) SetAsAuto(iFaceName string) (bool, error) {
 	return false, fmt.Errorf("cannot check if IP is static: not supported on %s", runtime.GOOS)
 }
 
-// IsStaticIP Check if network interface has a static IP configured
-func (inst *DHCP) IsStaticIP(iFaceName string) (bool, error) {
-	if isLinux() {
-		body, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			return false, err
-		}
-		return hasStaticIPDhcpcdConf(string(body), iFaceName, false), nil
-	}
-	return false, fmt.Errorf("cannot check if IP is static: not supported on %s", runtime.GOOS)
-}
-
 //SetStaticIP Set a static IP for the specified network interface
-func (inst *DHCP) SetStaticIP(iFaceName, ip, gatewayIP, dnsIP string) error {
-	iface, err := nets.CheckInterfacesName(iFaceName)
-	if err != nil {
-		return err
+func (inst *DHCP) SetStaticIP(body *SetStaticIP) (string, error) {
+	if body == nil {
+		return "", errors.New("body can not be empty")
 	}
-	if !iface {
-		return fmt.Errorf("network interface not found")
+	if body.Ip == "" {
+		return "", errors.New("ip can not be empty")
+	}
+	if body.NetMask == "" {
+		return "", errors.New("NetMask can not be empty")
+	}
+	if body.GatewayIP == "" {
+		return "", errors.New("GatewayIP can not be empty")
+	}
+	if body.IFaceName == "" {
+		return "", errors.New("interface name can not be empty")
+	}
+	_, err := address.New().IsIPSubnet(body.NetMask)
+	if err != nil {
+		return "", err
+	}
+	ipAndSub, _, err := address.GetIPSubnet(body.Ip, body.NetMask)
+	if err != nil {
+		return "", err
+	}
+	_, err = inst.SetAsAuto(body.IFaceName) // remove if existing
+	if err != nil {
+		return "", err
+	}
+	if body.CheckInterfaceExists {
+		_, err := nets.CheckInterfacesName(body.IFaceName)
+		if err != nil {
+			return "", fmt.Errorf(fmt.Sprintf("network interface not found:%s", body.IFaceName))
+		}
 	}
 	if isLinux() {
-		return setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP)
+		return setStaticIPDHCPConf(body.IFaceName, ipAndSub, body.GatewayIP, body.DnsIP, body.CheckInterfaceExists, body.SaveFile)
 	}
-	return fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
+	return "", fmt.Errorf("cannot set static IP on %s", runtime.GOOS)
 }
 
 // for dhcpcd.conf
@@ -106,7 +150,6 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 				withinInterfaceCtx = true
 				if delete {
 					for ii := 0; ii < 4; ii++ {
-						fmt.Println("line number ", i, line, ii)
 						err := removeLine(filePath, i)
 						if err != nil {
 							return false
@@ -129,37 +172,40 @@ func hasStaticIPDhcpcdConf(dhcpConf, iFaceName string, delete bool) bool {
 }
 
 // setStaticIPDHCPConf - updates /etc/dhcpd.conf and sets the current IP address to be static
-func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string) error {
+func setStaticIPDHCPConf(iFaceName, ip, gatewayIP, dnsIP string, checkInterfaceExists, writeFile bool) (string, error) {
 	nets := networking.New()
-	fmt.Println(iFaceName)
-	ipV4, err := nets.GetNetworkByIface(iFaceName)
-	fmt.Println(ipV4)
-	if err != nil {
-		return err
+	if checkInterfaceExists {
+		ipV4, err := nets.GetNetworkByIface(iFaceName)
+		if err != nil {
+			return "", err
+		}
+		ip = ipV4.IP
+		gatewayIP, _ = nets.GetGatewayIP(iFaceName)
+		if dnsIP == "" {
+			dnsIP = ip
+		}
 	}
-	ip = ipV4.IP
-	gatewayIP, _ = nets.GetGatewayIP(iFaceName)
-	if dnsIP == "" {
-		dnsIP = ip
-	}
+
 	add := updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP)
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	body = append(body, []byte(add)...)
-	err = ioutil.WriteFile(filePath, body, 0755)
-	if err != nil {
-		return err
+	if writeFile {
+		err = ioutil.WriteFile(filePath, body, 0755)
+		if err != nil {
+			return "", err
+		}
 	}
-	return nil
+	return string(body), nil
 }
 
 // updates dhcpd.conf content -- sets static IP address there
 // for dhcpcd.conf
 func updateStaticIPDhcpcdConf(iFaceName, ip, gatewayIP, dnsIP string) string {
 	var body []byte
-	add := fmt.Sprintf("\ninterface%s\nstatic ip_address=%s\n",
+	add := fmt.Sprintf("\ninterface %s\nstatic ip_address=%s\n",
 		iFaceName, ip)
 
 	body = append(body, []byte(add)...)

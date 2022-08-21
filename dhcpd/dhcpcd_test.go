@@ -5,21 +5,31 @@ import (
 	"testing"
 )
 
-func TestHasStaticIP(t *testing.T) {
+var iface = "wlp0s20f3"
 
-	nets := New()
+func Test_SetStaticIP(t *testing.T) {
+	nets := New(&DHCP{FilePath: "dhcpcd.conf"})
+	conf, err := nets.SetStaticIP(&SetStaticIP{
+		Ip:                   "10.0.40.22",
+		NetMask:              "255.255.0.0",
+		IFaceName:            iface,
+		GatewayIP:            "192.168.15.1",
+		DnsIP:                "8.8.8.8",
+		CheckInterfaceExists: false,
+		SaveFile:             true,
+	})
+	fmt.Println(err)
+	fmt.Println(conf)
+}
 
-	out, err := nets.SetAsAuto("wlp3s0")
+func Test_Exists(*testing.T) {
+	nets := New(&DHCP{FilePath: "dhcpcd.conf"})
+	out, err := nets.Exists(iface)
 	fmt.Println(out, err)
-	out, err = nets.IsStaticIP("wlp3s0")
-	fmt.Println(out, err)
-	err = nets.SetStaticIP("wlp3s0", "192.168.15.11/24", "192.168.15.1", "8.8.8.8")
-	fmt.Println(out, err)
+}
 
-	//fmt.Println(nets.SetStaticIP(" wlp3s0", "192.168.15.11/24", "192.168.15.1", "8.8.8.8"))
-	//fmt.Println(nets.IsStaticIP("wlp3s0"))
-	//fmt.Println(nets.SetAsAuto("wlp3s0"))
-	//fmt.Println(nets.IsStaticIP("wlp3s0"))
-	//fmt.Println(nets.SetStaticIP("eth1", "192.168.15.11/24", "192.168.15.1", "8.8.8.8"))
-
+func Test_SetAsAuto(t *testing.T) {
+	nets := New(&DHCP{FilePath: "dhcpcd.conf"})
+	out, err := nets.SetAsAuto(iface)
+	fmt.Println(out, err)
 }
